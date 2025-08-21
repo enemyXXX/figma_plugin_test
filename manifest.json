@@ -1,0 +1,14 @@
+{
+  "name": "SVG → GitHub (React + VKUI)",
+  "id": "com.example.svg-to-github",
+  "api": "1.0.0",
+  "main": "dist/plugin/code.js",
+  "ui": "dist/ui/index.html",
+  "editorType": ["figma"],
+  "relaunchButtons": [
+    {
+      "command": "open",
+      "name": "Open SVG → GitHub"
+    }
+  ]
+}
