@@ -24,8 +24,8 @@ const isRepoKind = (x: unknown): x is RepoKind => {
   return x === 'public-icons' || x === 'private-icons' || x === 'internal-images';
 };
 
-const computeSelectionCount = (): SceneNode[] => {
-  return figma.currentPage.selection;
+const computeSelectionCount = (): number => {
+  return figma.currentPage.selection.length;
 };
 
 const emitSelection = (): void => {
@@ -39,14 +39,12 @@ const exportSelection = async (
   const selection = figma.currentPage.selection;
 
   if (selection.length === 0) {
-    postMessage({ type: 'error', message: 'Ни один элемент не выделен' });
+    throw new Error('Ни один элемент не выделен');
   }
 
   const zip = new JSZip();
 
   for (const node of selection) {
-    const nodeName = node.name || 'asset_' + String(i + 1);
-
     if (format === 'svg') {
       const svgBytes = await exportNodeBytes(node, {
         format: 'SVG',
@@ -56,7 +54,7 @@ const exportSelection = async (
         svgSimplifyStroke: false,
       });
 
-      zip.file(svgPath(nodeName), svgBytes);
+      zip.file(svgPath(node.name), svgBytes);
       continue;
     }
 
@@ -69,7 +67,7 @@ const exportSelection = async (
         constraint: { type: 'SCALE', value: scale },
       });
 
-      zip.file(rasterPath(nodeName, density, format), bytes);
+      zip.file(rasterPath(node.name, density, format), bytes);
     }
   }
 
@@ -125,6 +123,8 @@ figma.ui.onmessage = async function (message: UIToPluginMessage): Promise<void> 
       case 'check-token': {
         const kind = isRepoKind(message.payload.kind) ? message.payload.kind : 'public-icons';
         const tokenValue = (await Storage.getToken(kind)) || '';
+        const reqId = message.reqId;
+
         if (!tokenValue) {
           postMessage({ type: 'error', message: 'Токен не задан' });
           return;
@@ -134,23 +134,28 @@ figma.ui.onmessage = async function (message: UIToPluginMessage): Promise<void> 
 
         if (result.ok && result.data) {
           postMessage({
-            type: 'token-ok',
+            type: 'token-valid',
             payload: { kind, login: result.data.displayName },
+            reqId,
           });
         } else {
           postMessage({
-            type: 'token-error',
+            type: 'error',
             message:
               (result.error || 'Проверка не пройдена') +
               (result.status ? ' (' + String(result.status) + ')' : ''),
+            target: message.type,
+            reqId,
           });
         }
+
         break;
       }
 
-      case 'export-images': {
+      case 'export': {
         const format = message.payload.format;
         const densities: RasterDensity[] = message.payload.densities || [];
+        const reqId = message.reqId;
 
         if ((format === 'png' || format === 'jpg') && densities.length === 0) {
           postMessage({ type: 'error', message: 'Не выбраны плотности' });
@@ -160,13 +165,11 @@ figma.ui.onmessage = async function (message: UIToPluginMessage): Promise<void> 
         try {
           const response = await exportSelection(format, densities);
           postMessage({
-            type: 'export-result',
+            type: 'save-archive',
             payload: { zipName: response.zipName, zipBytes: response.zipBytes },
           });
         } catch (error) {
-          postMessage({ type: 'error', message: toMessage(error) });
-        } finally {
-          postMessage({ type: 'export-final' });
+          postMessage({ type: 'error', message: toMessage(error), target: message.type, reqId });
         }
         break;
       }

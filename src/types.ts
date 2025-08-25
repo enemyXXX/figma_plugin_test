@@ -4,13 +4,14 @@ export type UIToPluginMessage =
   | { type: 'set-selected'; payload: { kind: RepoKind } }
   | { type: 'save-token'; payload: { kind: RepoKind; token: string } }
   | { type: 'clear-token'; payload: { kind: RepoKind } }
-  | { type: 'check-token'; payload: { kind: RepoKind } }
+  | { type: 'check-token'; payload: { kind: RepoKind }; reqId: string }
   | {
-      type: 'export-images';
+      type: 'export';
       payload: {
         format: ExportFormat;
         densities?: RasterDensity[];
       };
+      reqId: string;
     };
 
 export type PluginToUIMessage =
@@ -18,13 +19,16 @@ export type PluginToUIMessage =
   | { type: 'selected-saved'; payload: { kind: RepoKind } }
   | { type: 'token-saved'; payload: { kind: RepoKind; token: string } }
   | { type: 'token-cleared'; payload: { kind: RepoKind } }
-  | { type: 'token-ok'; payload: { kind: RepoKind; login: string } }
-  | { type: 'token-error'; message: string }
-  | { type: 'error'; message: string }
-  | { type: 'selection'; payload: SceneNode[] }
-  | { type: 'export-final' }
+  | { type: 'token-valid'; payload: { kind: RepoKind; login: string }; reqId: string }
   | {
-      type: 'export-result';
+      type: 'error';
+      message: string;
+      target?: 'check-token' | 'export' | 'save-token' | 'clear-token' | 'set-selected';
+      reqId?: string;
+    }
+  | { type: 'selection'; payload: number }
+  | {
+      type: 'save-archive';
       payload: { zipName: string; zipBytes: Uint8Array<ArrayBuffer> };
     };
 

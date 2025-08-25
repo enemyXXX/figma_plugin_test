@@ -1,27 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-import { isPluginMessageEvent } from '../utils';
+import { useMessage } from './useMessage';
 
 export interface UseSelectionReturn {
-  selectedNodes: SceneNode[];
+  selectedNodesCount: number;
 }
 
 export const useSelection = (): UseSelectionReturn => {
-  const [selectedNodes, setSelectedNodes] = useState([]);
+  const [selectedNodesCount, setSelectedNodesCount] = useState(0);
 
-  useEffect(() => {
-    const handler = (event: MessageEvent<unknown>): void => {
-      if (!isPluginMessageEvent(event)) return;
-      const msg = event.data.pluginMessage;
+  useMessage({ types: ['selection'] }, (message) => {
+    if (message.type === 'selection') setSelectedNodesCount(message.payload);
+  });
 
-      if (msg.type === 'selection') {
-        setSelectedNodes(msg.payload);
-      }
-    };
-
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
-  }, []);
-
-  return { selectedNodes };
+  return { selectedNodesCount: selectedNodesCount };
 };

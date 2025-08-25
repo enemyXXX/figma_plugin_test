@@ -24,6 +24,7 @@ export const Storage = {
 
   async getToken(kind: RepoKind): Promise<string | null> {
     const key = tokenKeyByRepo[kind];
+
     return (await figma.clientStorage.getAsync(key)) as string | null;
   },
 
@@ -38,15 +39,16 @@ export const Storage = {
   },
 
   async getAllTokens(): Promise<Record<RepoKind, string>> {
-    const [pub, priv, img] = await Promise.all([
+    const [publicToken, privateIconsToken, imagesToken] = await Promise.all([
       figma.clientStorage.getAsync(STORAGE_KEYS.tokenPublic),
       figma.clientStorage.getAsync(STORAGE_KEYS.tokenPrivate),
       figma.clientStorage.getAsync(STORAGE_KEYS.tokenImages),
     ]);
+
     return {
-      'public-icons': (pub as string) || '',
-      'private-icons': (priv as string) || '',
-      'internal-images': (img as string) || '',
+      'public-icons': (publicToken as string) || '',
+      'private-icons': (privateIconsToken as string) || '',
+      'internal-images': (imagesToken as string) || '',
     };
   },
 };

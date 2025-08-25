@@ -24,7 +24,7 @@ export const ExportSharedOptions = ({
         onChange={handleGroupItemsChange}
         description={`${iconName} будет добавлен по пути ${path}, иначе — ${unsortedPath}`}
       >
-        Группировать по папкам в соотвествии с размером
+        Группировать по папкам в соответствии с размером
       </Checkbox>
     </FormItem>
   );

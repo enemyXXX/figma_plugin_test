@@ -3,59 +3,38 @@ import { Snackbar, SnackbarProps } from '@vkontakte/vkui';
 import React, { ReactElement, useEffect, useState } from 'react';
 
 import { ActionStatus } from '../../types';
-import { isPluginMessageEvent } from '../utils';
+
+import { useMessage } from './useMessage';
 
 export const useSnackbar = (): ReactElement<SnackbarProps> | null => {
   const [snackbar, setSnackbar] = useState<ReactElement<SnackbarProps> | null>(null);
   const [action, setAction] = useState<ActionStatus | null>(null);
 
-  useEffect(() => {
-    const handler = (event: MessageEvent<unknown>): void => {
-      if (!isPluginMessageEvent(event)) return;
-
-      const message = event.data.pluginMessage;
-
+  useMessage(
+    { types: ['token-saved', 'token-cleared', 'token-valid', 'save-archive', 'error'] },
+    (message) => {
       switch (message.type) {
-        case 'token-saved': {
-          setAction({ type: 'success', message: 'Токен сохранен для выбранного репозитория' });
+        case 'token-saved':
+          setAction({ type: 'success', message: 'Токен сохранён для выбранного репозитория' });
           break;
-        }
-        case 'token-cleared': {
+        case 'token-cleared':
           setAction({ type: 'success', message: 'Токен удалён для выбранного репозитория' });
           break;
-        }
-        case 'token-ok': {
+        case 'token-valid':
           setAction({
             type: 'success',
             message: 'Токен валиден (' + String(message.payload.login) + ')',
           });
           break;
-        }
-        case 'export-result': {
-          setAction({
-            type: 'success',
-            message: 'Zip Archive успешно создан',
-          });
+        case 'save-archive':
+          setAction({ type: 'success', message: 'Zip-архив успешно создан' });
           break;
-        }
-        case 'token-error':
-          console.log(message);
-          setAction({
-            type: 'fail',
-            message: 'Ошибка при валидации токена: ' + String(message.message),
-          });
-          break;
-        case 'error': {
+        case 'error':
           setAction({ type: 'fail', message: 'Ошибка: ' + String(message.message) });
           break;
-        }
       }
-    };
-
-    window.addEventListener('message', handler);
-
-    return () => window.removeEventListener('message', handler);
-  }, []);
+    }
+  );
 
   useEffect(() => {
     if (!action) return;

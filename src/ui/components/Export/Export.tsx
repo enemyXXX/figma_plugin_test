@@ -11,10 +11,9 @@ import { ExportSharedOptions } from './ExportSharedOptions';
 import { ExportSvgOptions } from './ExportSvgOptions';
 
 interface ExportProps {
-  selectedNodes: SceneNode[];
   activeRepoOption: RepoOption;
 }
-const Export = ({ activeRepoOption, selectedNodes }: ExportProps): JSX.Element => {
+const Export = ({ activeRepoOption }: ExportProps): JSX.Element => {
   const {
     exportFormat,
     handleExportFormatChange,
@@ -28,7 +27,7 @@ const Export = ({ activeRepoOption, selectedNodes }: ExportProps): JSX.Element =
     disableFormatSelect,
     groupItems,
     handleGroupItemsUpdate,
-  } = useExport({ selectedNodes, activeRepoOption });
+  } = useExport(activeRepoOption);
 
   const renderActiveExportFormatOptions = () => {
     switch (exportFormat) {

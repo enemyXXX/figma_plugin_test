@@ -9,7 +9,8 @@
     "skipLibCheck": true,
     "types": ["@figma/plugin-typings"],
     "noUncheckedIndexedAccess": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   },
   "exclude": ["dist"]
 }

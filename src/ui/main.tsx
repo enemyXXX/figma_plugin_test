@@ -12,7 +12,7 @@ import { useSelection } from './hooks/useSelection';
 import { useSnackbar } from './hooks/useSnackbar';
 
 function App(): JSX.Element {
-  const { selectedNodes } = useSelection();
+  const { selectedNodesCount } = useSelection();
   const snackbar = useSnackbar();
   const { activeRepoOption } = useActiveRepo();
 
@@ -24,9 +24,9 @@ function App(): JSX.Element {
             <Div>
               <Auth activeRepoOption={activeRepoOption} />
               <Spacing size={6}></Spacing>
-              <SelectionInfo count={selectedNodes.length} />
+              <SelectionInfo count={selectedNodesCount} />
               <Spacing size={8} />
-              <Export selectedNodes={selectedNodes} activeRepoOption={activeRepoOption} />
+              <Export activeRepoOption={activeRepoOption} />
               {snackbar}
             </Div>
           </Group>

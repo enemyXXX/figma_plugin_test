@@ -1,6 +1,8 @@
 import { REPOS } from '../constants';
 import { RepoKind } from '../types';
 
+import { hasMessage } from './message';
+
 export type ApiResult<T> = {
   ok: boolean;
   status: number;
@@ -8,23 +10,17 @@ export type ApiResult<T> = {
   error?: string;
 };
 
-function hasMessage(x: unknown): x is { message: unknown } {
-  return typeof x === 'object' && x !== null && 'message' in x;
-}
+const toApiError = (error: unknown): string => {
+  if (hasMessage(error)) return String(error.message);
 
-function toApiError(e: unknown): string {
-  if (hasMessage(e)) return String(e.message);
-  return String(e);
-}
+  return String(error);
+};
 
-/**
- * Безопасный fetch с таймаутом.
- */
-export async function safeFetch(
+export const safeFetch = async (
   url: string,
   init: RequestInit,
   timeoutMs: number
-): Promise<Response> {
+): Promise<Response> => {
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
@@ -37,7 +33,8 @@ export async function safeFetch(
 
     const timeout = new Promise<Response>((_, reject) => {
       timeoutId = setTimeout(() => {
-        controller?.abort();
+        if (controller) controller.abort();
+
         reject(new Error('Request timed out: ' + url));
       }, timeoutMs);
     });
@@ -49,14 +46,11 @@ export async function safeFetch(
     if (timeoutId) clearTimeout(timeoutId);
     throw e;
   }
-}
+};
 
-/**
- * Проверка GitHub токена.
- */
-export async function checkGithubToken(
+const checkGithubToken = async (
   token: string
-): Promise<ApiResult<{ login: string; id?: number }>> {
+): Promise<ApiResult<{ login: string; id?: number }>> => {
   try {
     const res = await safeFetch(
       'https://api.github.com/user',
@@ -79,15 +73,12 @@ export async function checkGithubToken(
   } catch (e) {
     return { ok: false, status: 0, error: toApiError(e) };
   }
-}
+};
 
-/**
- * Проверка GitLab токена.
- */
-export async function checkGitlabToken(
+const checkGitlabToken = async (
   token: string,
   baseUrl: string
-): Promise<ApiResult<{ username: string; id?: number }>> {
+): Promise<ApiResult<{ username: string; id?: number }>> => {
   try {
     const res = await safeFetch(
       baseUrl.replace(/\/+$/, '') + '/api/v4/user',
@@ -107,31 +98,46 @@ export async function checkGitlabToken(
   } catch (e) {
     return { ok: false, status: 0, error: toApiError(e) };
   }
-}
+};
 
-/**
- * Унифицированная проверка токена по RepoKind.
- */
-export async function verifyTokenByKind(
+export const verifyTokenByKind = async (
   kind: RepoKind,
   token: string
-): Promise<ApiResult<{ displayName: string }>> {
+): Promise<ApiResult<{ displayName: string }>> => {
   if (!token) return { ok: false, status: 0, error: 'Токен не задан' };
 
   if (kind === 'public-icons') {
-    const gh = await checkGithubToken(token);
-    return gh.ok && gh.data
-      ? { ok: true, status: gh.status, data: { displayName: gh.data.login } }
-      : { ok: false, status: gh.status, error: gh.error || 'Ошибка проверки GitHub токена' };
+    const githubResponse = await checkGithubToken(token);
+
+    return githubResponse.ok && githubResponse.data
+      ? {
+          ok: true,
+          status: githubResponse.status,
+          data: { displayName: githubResponse.data.login },
+        }
+      : {
+          ok: false,
+          status: githubResponse.status,
+          error: githubResponse.error || 'Ошибка проверки GitHub токена',
+        };
   }
 
-  const cfg = REPOS[kind];
-  if (cfg.kind !== 'gitlab') {
+  const repoConfig = REPOS[kind];
+
+  if (repoConfig.kind !== 'gitlab') {
     return { ok: false, status: 0, error: 'Неверная конфигурация репозитория' };
   }
 
-  const gl = await checkGitlabToken(token, cfg.baseUrl);
-  return gl.ok && gl.data
-    ? { ok: true, status: gl.status, data: { displayName: gl.data.username } }
-    : { ok: false, status: gl.status, error: gl.error || 'Ошибка проверки GitLab токена' };
-}
+  const gitlabResponse = await checkGitlabToken(token, repoConfig.baseUrl);
+  return gitlabResponse.ok && gitlabResponse.data
+    ? {
+        ok: true,
+        status: gitlabResponse.status,
+        data: { displayName: gitlabResponse.data.username },
+      }
+    : {
+        ok: false,
+        status: gitlabResponse.status,
+        error: gitlabResponse.error || 'Ошибка проверки GitLab токена',
+      };
+};

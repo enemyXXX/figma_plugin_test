@@ -4,13 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EXPORT_FORMATS, RASTER_DENSITIES } from '../../constants';
 import { ExportFormat, RasterDensity } from '../../types';
 import { downloadZip } from '../../utils/download';
-import { postMessage } from '../../utils/message';
-import { isPluginMessageEvent, RepoOption } from '../utils';
+import { generateRequestId, postMessage } from '../../utils/message';
+import { RepoOption } from '../utils';
 
-interface UseExportProps {
-  selectedNodes: SceneNode[];
-  activeRepoOption: RepoOption;
-}
+import { useMessage } from './useMessage';
 
 interface UseExportReturn {
   exportFormat: ExportFormat;
@@ -27,7 +24,7 @@ interface UseExportReturn {
   handleGroupItemsUpdate: VoidFunction;
 }
 
-export const useExport = ({ selectedNodes, activeRepoOption }: UseExportProps): UseExportReturn => {
+export const useExport = (activeRepoOption: RepoOption): UseExportReturn => {
   const rasterDensityOptions: ChipOption[] = useMemo(() => {
     return RASTER_DENSITIES.map((density) => ({ label: density.toUpperCase(), value: density }));
   }, []);
@@ -36,6 +33,7 @@ export const useExport = ({ selectedNodes, activeRepoOption }: UseExportProps): 
   const [densities, setDensities] = useState<ChipOption[]>(rasterDensityOptions);
   const [svgCurrentColor, setSvgCurrentColor] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [lastReqId, setLastReqId] = useState<string | null>(null);
   const [groupItems, setGroupItems] = useState(true);
 
   useEffect(() => {
@@ -60,14 +58,17 @@ export const useExport = ({ selectedNodes, activeRepoOption }: UseExportProps): 
   }, []);
 
   const handleZipDownload = useCallback(() => {
+    const reqId = generateRequestId();
     setProcessing(true);
+    setLastReqId(reqId);
 
     postMessage({
-      type: 'export-images',
+      type: 'export',
       payload: {
         format: exportFormat,
         densities: densities.map((density) => density.value) as RasterDensity[],
       },
+      reqId,
     });
   }, [exportFormat, densities]);
 
@@ -75,28 +76,32 @@ export const useExport = ({ selectedNodes, activeRepoOption }: UseExportProps): 
     setGroupItems((prev) => !prev);
   }, []);
 
-  useEffect(() => {
-    const handler = (event: MessageEvent<unknown>): void => {
-      if (!isPluginMessageEvent(event)) return;
-      const message = event.data.pluginMessage;
+  const resetProcess = () => {
+    setLastReqId(null);
+    setProcessing(false);
+  };
 
-      switch (message.type) {
-        case 'export-final':
-          setProcessing(false);
-          break;
-        case 'export-result': {
-          const { zipName, zipBytes } = message.payload;
-          downloadZip(zipName, zipBytes);
-          break;
-        }
-        default:
-          break;
+  useMessage({ types: ['save-archive'] }, (message) => {
+    switch (message.type) {
+      case 'save-archive': {
+        const { zipName, zipBytes } = message.payload;
+        downloadZip(zipName, zipBytes);
+        resetProcess();
+        break;
       }
-    };
+    }
+  });
 
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
-  }, []);
+  useMessage(
+    {
+      types: ['error'],
+      predicate: (message) =>
+        message.type === 'error' &&
+        message.target === 'export' &&
+        (!lastReqId || message.reqId === lastReqId),
+    },
+    resetProcess
+  );
 
   return {
     exportFormat,
