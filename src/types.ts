@@ -10,6 +10,7 @@ export type UIToPluginMessage =
       payload: {
         format: ExportFormat;
         densities?: RasterDensity[];
+        groupBySize: boolean;
       };
       reqId: string;
     };
@@ -26,7 +27,7 @@ export type PluginToUIMessage =
       target?: 'check-token' | 'export' | 'save-token' | 'clear-token' | 'set-selected';
       reqId?: string;
     }
-  | { type: 'selection'; payload: number }
+  | { type: 'selection'; payload: { total: number } }
   | {
       type: 'save-archive';
       payload: { zipName: string; zipBytes: Uint8Array<ArrayBuffer> };

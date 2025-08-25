@@ -81,3 +81,5 @@ export const RASTER_FOLDER: Record<RasterDensity, string> = {
 };
 
 export const EXPORT_FORMATS: ReadonlyArray<ExportFormat> = ['svg', 'png', 'jpg'];
+
+export const UNSORTED_FOLDER = 'Unsorted';

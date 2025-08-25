@@ -67,10 +67,11 @@ export const useExport = (activeRepoOption: RepoOption): UseExportReturn => {
       payload: {
         format: exportFormat,
         densities: densities.map((density) => density.value) as RasterDensity[],
+        groupBySize: groupItems,
       },
       reqId,
     });
-  }, [exportFormat, densities]);
+  }, [exportFormat, densities, groupItems]);
 
   const handleGroupItemsUpdate = useCallback(() => {
     setGroupItems((prev) => !prev);

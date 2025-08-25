@@ -10,7 +10,7 @@ import {
   UIToPluginMessage,
 } from './types';
 import { verifyTokenByKind } from './utils/api';
-import { exportNodeBytes, rasterPath, svgPath } from './utils/export';
+import { exportNodeBytes, getNodeBaseSize, rasterPath, svgPath } from './utils/export';
 import { toMessage } from './utils/message';
 import { Storage } from './utils/storage';
 
@@ -29,12 +29,13 @@ const computeSelectionCount = (): number => {
 };
 
 const emitSelection = (): void => {
-  figma.ui.postMessage({ type: 'selection', payload: computeSelectionCount() });
+  figma.ui.postMessage({ type: 'selection', payload: { total: computeSelectionCount() } });
 };
 
 const exportSelection = async (
   format: ExportFormat,
-  densities: ReadonlyArray<RasterDensity>
+  densities: ReadonlyArray<RasterDensity>,
+  groupBySize: boolean
 ): Promise<{ zipName: string; zipBytes: Uint8Array<ArrayBuffer> }> => {
   const selection = figma.currentPage.selection;
 
@@ -45,6 +46,8 @@ const exportSelection = async (
   const zip = new JSZip();
 
   for (const node of selection) {
+    const baseSize = getNodeBaseSize(node);
+
     if (format === 'svg') {
       const svgBytes = await exportNodeBytes(node, {
         format: 'SVG',
@@ -54,7 +57,14 @@ const exportSelection = async (
         svgSimplifyStroke: false,
       });
 
-      zip.file(svgPath(node.name), svgBytes);
+      zip.file(
+        svgPath({
+          nodeName: node.name,
+          groupBySize,
+          baseSize,
+        }),
+        svgBytes
+      );
       continue;
     }
 
@@ -67,7 +77,16 @@ const exportSelection = async (
         constraint: { type: 'SCALE', value: scale },
       });
 
-      zip.file(rasterPath(node.name, density, format), bytes);
+      zip.file(
+        rasterPath({
+          nodeName: node.name,
+          density,
+          exportFormat: format,
+          groupBySize,
+          baseSize,
+        }),
+        bytes
+      );
     }
   }
 
@@ -156,6 +175,7 @@ figma.ui.onmessage = async function (message: UIToPluginMessage): Promise<void> 
         const format = message.payload.format;
         const densities: RasterDensity[] = message.payload.densities || [];
         const reqId = message.reqId;
+        const groupBySize = !!message.payload.groupBySize;
 
         if ((format === 'png' || format === 'jpg') && densities.length === 0) {
           postMessage({ type: 'error', message: 'Не выбраны плотности' });
@@ -163,7 +183,7 @@ figma.ui.onmessage = async function (message: UIToPluginMessage): Promise<void> 
         }
 
         try {
-          const response = await exportSelection(format, densities);
+          const response = await exportSelection(format, densities, groupBySize);
           postMessage({
             type: 'save-archive',
             payload: { zipName: response.zipName, zipBytes: response.zipBytes },

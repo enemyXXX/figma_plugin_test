@@ -10,7 +10,7 @@ export const useSelection = (): UseSelectionReturn => {
   const [selectedNodesCount, setSelectedNodesCount] = useState(0);
 
   useMessage({ types: ['selection'] }, (message) => {
-    if (message.type === 'selection') setSelectedNodesCount(message.payload);
+    if (message.type === 'selection') setSelectedNodesCount(message.payload.total);
   });
 
   return { selectedNodesCount: selectedNodesCount };
