@@ -1,5 +1,5 @@
 import { RASTER_FOLDER } from '../constants';
-import { RasterDensity } from '../types';
+import { ExportFormat, RasterDensity } from '../types';
 
 const sanitizeName = (name: string): string => {
   return name
@@ -8,11 +8,7 @@ const sanitizeName = (name: string): string => {
     .toLowerCase();
 };
 
-export const rasterPath = (
-  nodeName: string,
-  density: RasterDensity,
-  ext: 'png' | 'jpg'
-): string => {
+export const rasterPath = (nodeName: string, density: RasterDensity, ext: ExportFormat): string => {
   const base = sanitizeName(nodeName || 'asset');
   const folder = RASTER_FOLDER[density];
 
@@ -22,4 +18,38 @@ export const svgPath = (nodeName: string): string => {
   const base = sanitizeName(nodeName || 'asset');
 
   return base + '.svg';
+};
+
+const hasGlobalExport = (): boolean => {
+  const g = figma as unknown as { exportAsync?: unknown };
+
+  return typeof g.exportAsync === 'function';
+};
+
+type NodeWithExport = SceneNode & {
+  exportAsync: (settings?: ExportSettings) => Promise<Uint8Array<ArrayBuffer>>;
+};
+const hasNodeExport = (n: SceneNode): n is NodeWithExport => {
+  const node = n as unknown as { exportAsync?: unknown };
+
+  return typeof node.exportAsync === 'function';
+};
+
+export const exportNodeBytes = (
+  node: SceneNode,
+  settings: ExportSettings
+): Promise<Uint8Array<ArrayBuffer>> => {
+  if (hasGlobalExport()) {
+    const g = figma as unknown as {
+      exportAsync: (node: SceneNode, settings?: ExportSettings) => Promise<Uint8Array<ArrayBuffer>>;
+    };
+
+    return g.exportAsync(node, settings);
+  }
+
+  if (hasNodeExport(node)) {
+    return node.exportAsync(settings);
+  }
+
+  return Promise.reject(new Error('Этот узел не поддерживает экспорт'));
 };

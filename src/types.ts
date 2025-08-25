@@ -10,8 +10,6 @@ export type UIToPluginMessage =
       payload: {
         format: ExportFormat;
         densities?: RasterDensity[];
-        jpgQuality?: number;
-        zipName: string;
       };
     };
 
@@ -24,9 +22,10 @@ export type PluginToUIMessage =
   | { type: 'token-error'; message: string }
   | { type: 'error'; message: string }
   | { type: 'selection'; payload: SceneNode[] }
+  | { type: 'export-final' }
   | {
       type: 'export-result';
-      payload: { ok: true; zipName: string; zipBytes: Uint8Array<ArrayBuffer> };
+      payload: { zipName: string; zipBytes: Uint8Array<ArrayBuffer> };
     };
 
 export type ActionStatus = {

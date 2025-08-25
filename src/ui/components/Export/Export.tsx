@@ -1,17 +1,20 @@
-import { Spacing } from '@vkontakte/vkui';
+import { Flex, Spacing } from '@vkontakte/vkui';
 import React, { JSX } from 'react';
 
 import { useExport } from '../../hooks/useExport';
+import { RepoOption } from '../../utils';
 
 import { ExportActions } from './ExportActions';
 import { ExportFormatSelect } from './ExportFormatSelect';
 import { ExportRasterOptions } from './ExportRasterOptions';
+import { ExportSharedOptions } from './ExportSharedOptions';
 import { ExportSvgOptions } from './ExportSvgOptions';
 
 interface ExportProps {
   selectedNodes: SceneNode[];
+  activeRepoOption: RepoOption;
 }
-const Export = ({ selectedNodes }: ExportProps): JSX.Element => {
+const Export = ({ activeRepoOption, selectedNodes }: ExportProps): JSX.Element => {
   const {
     exportFormat,
     handleExportFormatChange,
@@ -20,8 +23,12 @@ const Export = ({ selectedNodes }: ExportProps): JSX.Element => {
     rasterDensityOptions,
     svgCurrentColor,
     handleDensitiesUpdate,
-    disableActions,
-  } = useExport(selectedNodes);
+    handleZipDownload,
+    processing,
+    disableFormatSelect,
+    groupItems,
+    handleGroupItemsUpdate,
+  } = useExport({ selectedNodes, activeRepoOption });
 
   const renderActiveExportFormatOptions = () => {
     switch (exportFormat) {
@@ -40,21 +47,27 @@ const Export = ({ selectedNodes }: ExportProps): JSX.Element => {
   };
 
   return (
-    <>
+    <Flex direction="column" gap={8}>
       <ExportFormatSelect
         activeFormat={exportFormat}
         handleChange={handleExportFormatChange}
         options={exportFormatOptions}
+        disabled={disableFormatSelect}
       />
       {renderActiveExportFormatOptions()}
-      <Spacing size={24} />
+      <ExportSharedOptions
+        exportFormat={exportFormat}
+        groupItems={groupItems}
+        handleGroupItemsChange={handleGroupItemsUpdate}
+      />
+      <Spacing size={12} />
       <ExportActions>
-        <ExportActions.Action disabled={disableActions}>Создать Merge Request</ExportActions.Action>
-        <ExportActions.Action disabled={disableActions} mode="secondary">
+        <ExportActions.Action disabled={processing}>Создать Merge Request</ExportActions.Action>
+        <ExportActions.Action disabled={processing} onClick={handleZipDownload} mode="secondary">
           Скачать ZIP Archive
         </ExportActions.Action>
       </ExportActions>
-    </>
+    </Flex>
   );
 };
 

@@ -1,5 +1,14 @@
 import { Icon24Help } from '@vkontakte/icons';
-import { Accordion, Button, ButtonGroup, FormItem, Input, Select, Tooltip } from '@vkontakte/vkui';
+import {
+  Accordion,
+  Button,
+  ButtonGroup,
+  FormItem,
+  Input,
+  Select,
+  Spacing,
+  Tooltip,
+} from '@vkontakte/vkui';
 import React from 'react';
 
 import { REPO_OPTIONS } from '../../../constants';
@@ -84,6 +93,7 @@ export const Auth = ({ activeRepoOption }: AuthProps) => {
             Проверить токен
           </Button>
         </ButtonGroup>
+        <Spacing size={12} />
       </Accordion.Content>
     </Accordion>
   );

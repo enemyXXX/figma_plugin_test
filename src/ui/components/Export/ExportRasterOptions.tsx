@@ -13,7 +13,7 @@ export const ExportRasterOptions = ({
   handleSelect,
 }: ExportRasterOptionsProps): JSX.Element => {
   return (
-    <FormItem top="Плотности" htmlFor="raster-density-select">
+    <FormItem top="Плотности" htmlFor="raster-density-select" noPadding>
       <ChipsSelect
         value={value}
         options={options}

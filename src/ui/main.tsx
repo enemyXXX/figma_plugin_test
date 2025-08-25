@@ -25,7 +25,8 @@ function App(): JSX.Element {
               <Auth activeRepoOption={activeRepoOption} />
               <Spacing size={6}></Spacing>
               <SelectionInfo count={selectedNodes.length} />
-              <Export selectedNodes={selectedNodes} />
+              <Spacing size={8} />
+              <Export selectedNodes={selectedNodes} activeRepoOption={activeRepoOption} />
               {snackbar}
             </Div>
           </Group>

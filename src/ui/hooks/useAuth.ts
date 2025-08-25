@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { INITIAL_TOKENS_STATE } from '../../constants';
-import type { RepoKind, UIToPluginMessage } from '../../types';
+import type { RepoKind } from '../../types';
+import { postMessage } from '../../utils/message';
 import { isPluginMessageEvent } from '../utils';
 
 interface UseAuthReturn {
@@ -31,10 +32,6 @@ export const useAuth = (repo: RepoKind): UseAuthReturn => {
     },
     [repo]
   );
-
-  const postMessage = (message: UIToPluginMessage) => {
-    window.parent.postMessage({ pluginMessage: message }, '*');
-  };
 
   const handleActiveRepoUpdate = useCallback((repo: RepoKind) => {
     postMessage({ type: 'set-selected', payload: { kind: repo } });

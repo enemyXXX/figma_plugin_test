@@ -31,6 +31,13 @@ export const useSnackbar = (): ReactElement<SnackbarProps> | null => {
           });
           break;
         }
+        case 'export-result': {
+          setAction({
+            type: 'success',
+            message: 'Zip Archive успешно создан',
+          });
+          break;
+        }
         case 'token-error':
           console.log(message);
           setAction({
